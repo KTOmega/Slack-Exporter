@@ -83,7 +83,7 @@ class FileDownloader:
             await asyncio.wait(self._download_tasks)
             await self._process_waiting_queue()
 
-    def _exists(self, filename: str) -> bool:
+    def exists(self, filename: str) -> bool:
         full_filename = os.path.join(self._outdir, filename)
 
         return os.path.exists(full_filename)
@@ -105,7 +105,7 @@ class FileDownloader:
     async def _download(self, filename: str, url: str, overwrite=False, use_auth=False, throw_on_nonsuccess=True):
         self._ensure_directories_exist(filename)
 
-        if self._exists(filename):
+        if self.exists(filename):
             return
 
         headers = {}

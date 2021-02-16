@@ -15,5 +15,8 @@ FILES_JSON_FILE = "files.json"
 CONVERSATIONS_EXPORT_DIR = "conversations"
 CONVERSATIONS_JSON_FILE = "conversations.json"
 PINS_JSON_FILE = "pins.json"
+HISTORY_JSON_DIR = "history"
+
+REPLIES_KEY = "$replies"
 
 ITEM_COUNT_LIMIT = 1000
