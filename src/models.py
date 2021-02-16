@@ -104,8 +104,10 @@ class SlackMessage:
         if isinstance(channel, SlackConversation):
             id = channel.id
 
-        replies_iterator = utils.AsyncIteratorWithRetry(await context.slack_client.conversations_replies(channel=id, ts=thread_id))
+        replies_iterator = utils.AsyncIteratorWithRetry(context.slack_client.conversations_replies, channel=id, ts=thread_id)
         all_replies = []
+
+        await replies_iterator.run()
 
         async for reply_resp in replies_iterator:
             for msg in reply_resp["messages"]:

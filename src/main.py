@@ -135,13 +135,15 @@ def export_file(ctx: ExporterContext, slack_file: models.SlackFile):
 
 async def export_files(ctx: ExporterContext):
     files_generator = utils.AsyncIteratorWithRetry(
-        await ctx.slack_client.files_list(count=constants.ITEM_COUNT_LIMIT, ts_to=ctx.export_time, ts_from=ctx.last_export_time)
+        ctx.slack_client.files_list, count=constants.ITEM_COUNT_LIMIT, ts_to=ctx.export_time, ts_from=ctx.last_export_time
     )
     all_files = []
 
     counter = Counter("Exporting files ")
 
     try:
+        await files_generator.run()
+
         async for file_resp in files_generator:
             all_files.extend(file_resp["files"])
             for sfile in file_resp["files"]:
@@ -161,11 +163,13 @@ async def export_files(ctx: ExporterContext):
 
 async def export_conversations(ctx: ExporterContext):
     convo_generator = utils.AsyncIteratorWithRetry(
-        await ctx.slack_client.conversations_list(limit=constants.ITEM_COUNT_LIMIT, types="public_channel,private_channel,mpim,im")
+        ctx.slack_client.conversations_list, limit=constants.ITEM_COUNT_LIMIT, types="public_channel,private_channel,mpim,im"
     )
     all_conversations = []
 
     try:
+        await convo_generator.run()
+
         async for convo_resp in convo_generator:
             all_conversations.extend(convo_resp["channels"])
             for convo in convo_resp["channels"]:
@@ -198,12 +202,11 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
         return not ctx.downloader.exists(filename)
 
     history_generator = utils.AsyncIteratorWithRetry(
-        await ctx.slack_client.conversations_history(
-            channel=convo.id,
-            limit=constants.ITEM_COUNT_LIMIT,
-            latest=ctx.export_time,
-            oldest=ctx.last_export_time,
-        )
+        ctx.slack_client.conversations_history,
+        channel=convo.id,
+        limit=constants.ITEM_COUNT_LIMIT,
+        latest=ctx.export_time,
+        oldest=ctx.last_export_time
     )
 
     history_folder = os.path.join(ctx.output_directory, constants.CONVERSATIONS_EXPORT_DIR, convo.id, constants.HISTORY_JSON_DIR)
@@ -213,6 +216,8 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
     counter = Counter(f"Exporting conversation history ({convo.id}) ")
 
     try:
+        await history_generator.run()
+
         async for history_resp in history_generator:
             for msg in history_resp["messages"]:
                 msg_obj = models.SlackMessage(msg)
