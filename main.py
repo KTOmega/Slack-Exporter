@@ -201,7 +201,8 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
         await ctx.slack_client.conversations_history(
             channel=convo.id,
             limit=constants.ITEM_COUNT_LIMIT,
-            latest=ctx.export_time
+            latest=ctx.export_time,
+            oldest=ctx.last_export_time,
         )
     )
 
