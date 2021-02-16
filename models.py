@@ -41,7 +41,20 @@ class SlackFile:
             log.warning(f"File {self.data['id']} does not have a url_private")
             return []
 
-        return [(self.data["url_private"], self.data["id"])]
+        if self.data.get("external_type", "") == "gdrive":
+            # skip gdrive files
+            return []
+
+        url = self.data["url_private"]
+        if url.startswith("https://drive.google.com"):
+            log.warning(f"File {self.id} is a Google Drive file?")
+            return []
+
+        return [(url, self.data["id"])]
+
+    @property
+    def id(self):
+        return self.data["id"]
 
 class SlackConversation:
     def __init__(self, data: Dict[str, Any]):

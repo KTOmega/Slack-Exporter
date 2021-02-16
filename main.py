@@ -44,7 +44,7 @@ async def main():
 
     # Run
     try:
-        await export_files(ctx)
+        await export_everything(ctx)
     except Exception as e:
         log.error(f"Uncaught {e.__class__.__name__}", exc_info=e)
 
@@ -117,24 +117,36 @@ async def export_users(ctx: ExporterContext):
         log.error("Got an API error while trying to export user info", exc_info=e)
 
 async def export_files(ctx: ExporterContext):
-    try:
-        files_generator = await ctx.slack_client.files_list(count=10, ts_to=ctx.export_time, ts_from=1612050000) #TODO: change with real  values
-        all_files = []
+    files_generator = await ctx.slack_client.files_list(count=constants.ITEM_COUNT_LIMIT, ts_to=ctx.export_time, ts_from=ctx.last_export_time)
+    all_files = []
 
-        async for file_resp in files_generator:
-            all_files.extend(file_resp["files"])
-            for sfile in file_resp["files"]:
-                file_obj = models.SlackFile(sfile)
+    while True:
+        try:
+            async for file_resp in files_generator:
+                all_files.extend(file_resp["files"])
+                for sfile in file_resp["files"]:
+                    file_obj = models.SlackFile(sfile)
 
-                for url, filename in file_obj.get_exportable_data():
-                    full_filename = os.path.join(constants.FILES_EXPORT_DIR, filename)
-                    ctx.downloader.enqueue_download(full_filename, url, use_auth=True)
+                    for url, filename in file_obj.get_exportable_data():
+                        full_filename = os.path.join(constants.FILES_EXPORT_DIR, filename)
+                        ctx.downloader.enqueue_download(full_filename, url, use_auth=True)
 
-            await ctx.downloader.flush_download_queue()
+                try:
+                    await ctx.downloader.flush_download_queue()
+                except httpx.HTTPStatusError as e:
+                    log.error(f"Caught HTTP status code {e.response.status_code}", exc_info=e)
 
-        ctx.downloader.write_json(os.path.join(constants.FILES_EXPORT_DIR, constants.FILES_JSON_FILE), all_files)
-    except SlackApiError as e:
-        log.error("Got an API error while trying to export files", exc_info=e)
+            break
+        except SlackApiError as e:
+            if e.response["error"] == "ratelimited":
+                delay = int(e.response.headers["Retry-After"])
+                log.warning(f"Rate limited by Slack for {delay} seconds")
+
+                await asyncio.sleep(delay + 1)
+            else:
+                log.error(f"Got an API error while trying to obtain file info", exc_info=e)
+
+    ctx.downloader.write_json(os.path.join(constants.FILES_EXPORT_DIR, constants.FILES_JSON_FILE), all_files)
 
 async def export_conversations(ctx: ExporterContext):
     try:
@@ -161,6 +173,15 @@ async def export_pins(ctx: ExporterContext, convo: models.SlackConversation):
         ctx.downloader.write_json(filename, pins["items"])
     except SlackApiError as e:
         log.error(f"Got an API error while trying to export pins for conversation {convo.id}", exc_info=e)
+
+async def export_everything(ctx: ExporterContext):
+    # export_emojis(ctx)
+    # export_team(ctx)
+    # export_reminders(ctx)
+    # export_users(ctx)
+    await export_files(ctx)
+    # export_conversations(ctx)
+    # export_pins(ctx)
 
 async def test(ctx: ExporterContext):
     try:
