@@ -56,7 +56,7 @@ async def _AsyncSlackResponse___anext__(self):
         return self.validate()
     elif _page_data_is_present(self.data):
         cur_page = self.data["paging"]["page"]
-        total_pages = self.data["paging"]["total"]
+        total_pages = self.data["paging"]["pages"]
 
         if cur_page >= total_pages:
             raise StopAsyncIteration
