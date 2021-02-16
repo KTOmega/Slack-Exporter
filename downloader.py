@@ -1,7 +1,8 @@
 import asyncio
 import collections
+import json
 import os
-from typing import List
+from typing import Any, List
 
 import httpx
 
@@ -25,9 +26,12 @@ class FileDownloader:
         await self.flush_download_queue()
         await self._httpclient.aclose()
 
-    def _ensure_outdir_exists(self):
-        if not os.path.exists(self._outdir):
-            os.mkdir(self._outdir)
+    def _ensure_directories_exist(self, filename: str):
+        file_dirname = os.path.dirname(filename)
+        full_path = os.path.join(self._outdir, file_dirname)
+
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
 
     async def _process_waiting_queue(self):
         i = 0
@@ -90,8 +94,16 @@ class FileDownloader:
         with open(full_filename, "wb") as fd:
             fd.write(content)
 
+    def write_json(self, filename: str, content: Any):
+        self._ensure_directories_exist(filename)
+
+        full_filename = os.path.join(self._outdir, filename)
+
+        with open(full_filename, "w") as fd:
+            json.dump(content, fd, separators=(",", ":"))
+
     async def _download(self, filename: str, url: str, overwrite=False, use_auth=False, throw_on_nonsuccess=True):
-        self._ensure_outdir_exists()
+        self._ensure_directories_exist(filename)
 
         if self._exists(filename):
             return
