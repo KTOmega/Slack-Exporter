@@ -5,7 +5,7 @@ import asyncio
 import logging
 from typing import Coroutine
 
-log = logging.getLogger()
+log = logging.getLogger("utils")
 
 class AsyncIteratorWithRetry:
     def __init__(self, iterator, retries=3):
@@ -17,25 +17,13 @@ class AsyncIteratorWithRetry:
         return self
 
     async def __anext__(self):
-        retry = 0
-        while retry <= self._retries:
-            try:
-                return await self._iterator.__anext__()
-            except SlackApiError as e:
-                if e.response["error"] == "ratelimited":
-                    delay = int(e.response.headers["Retry-After"])
-                    log.warning(f"API iterator rate limited by Slack for {delay} seconds")
+        return await with_retry(self._iterator.__anext__, retries=self._retries)
 
-                    await asyncio.sleep(delay + 1)
-                    retry += 1
-                else:
-                    raise e
-
-async def with_retry(api_call: Coroutine, retries=3, *args, **kwargs) -> AsyncSlackResponse:
+async def with_retry(coro: Coroutine, retries=3, *args, **kwargs):
     retry = 0
     while retry <= retries:
         try:
-            return await api_call(*args, **kwargs)
+            return await coro(*args, **kwargs)
         except SlackApiError as e:
             if e.response["error"] == "ratelimited":
                 delay = int(e.response.headers["Retry-After"])

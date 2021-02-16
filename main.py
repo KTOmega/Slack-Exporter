@@ -232,7 +232,7 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
                 except SlackApiError as e:
                     log.error(f"Error while obtaining reply metadata for message {msg_obj.ts} in channel {convo.id}", exc_info=e)
 
-                history_fragment.append(msg_obj.to_dict())
+                history_fragment.append(msg_obj.data)
                 counter.next()
 
             try:
@@ -241,7 +241,7 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
                 log.error(f"Caught HTTP status code {e.response.status_code}", exc_info=e)
 
             history_fragment.commit_fragments()
-    except SlackApiError as e:
+    except SlackApiError as e: # TODO: maybe catch a wider net here to save context?
         log.error(f"Got an API error while trying to obtain conversation history", exc_info=e)
 
     counter.finish()

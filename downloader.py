@@ -1,10 +1,10 @@
 import asyncio
 import collections
-import json
 import os
 from typing import Any, List
 
 import httpx
+import ujson as json
 
 class FileDownloader:
     """
@@ -100,7 +100,7 @@ class FileDownloader:
         full_filename = os.path.join(self._outdir, filename)
 
         with open(full_filename, "w") as fd:
-            json.dump(content, fd, separators=(",", ":"))
+            json.dump(content, fd)
 
     async def _download(self, filename: str, url: str, overwrite=False, use_auth=False, throw_on_nonsuccess=True):
         self._ensure_directories_exist(filename)

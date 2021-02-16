@@ -26,17 +26,13 @@ class SlackFile:
         return cls(slack_response.data["file"])
 
     def get_exportable_data(self) -> List[Tuple[str, str]]:
-        if "url_private" not in self.data:
+        url = self.data.get("url_private")
+        if url is None:
             log.warning(f"File {self.data['id']} does not have a url_private")
             return []
 
         if self.data.get("external_type", "") == "gdrive":
             # skip gdrive files
-            return []
-
-        url = self.data["url_private"]
-        if url.startswith("https://drive.google.com"):
-            log.warning(f"File {self.id} is a Google Drive file?")
             return []
 
         return [(url, self.data["id"])]
@@ -69,7 +65,11 @@ class SlackMessage:
 
     @property
     def has_replies(self):
-        return "reply_count" in self.data and self.data["reply_count"] > 0
+        return (
+            "reply_count" in self.data and
+            self.data["reply_count"] > 0 and
+            "thread_ts" in self.data
+        )
 
     @property
     def has_files(self):
@@ -98,24 +98,23 @@ class SlackMessage:
         if not self.has_replies:
             return
 
+        thread_id = self.data["thread_ts"]
+
         id = channel
         if isinstance(channel, SlackConversation):
             id = channel.id
 
-        replies_iterator = utils.AsyncIteratorWithRetry(await context.slack_client.conversations_replies(channel=id, ts=self.data["thread_ts"]))
+        replies_iterator = utils.AsyncIteratorWithRetry(await context.slack_client.conversations_replies(channel=id, ts=thread_id))
         all_replies = []
 
         async for reply_resp in replies_iterator:
             for msg in reply_resp["messages"]:
-                if msg["ts"] == self.data["thread_ts"]:
+                if msg["ts"] == thread_id:
                     continue
 
                 all_replies.append(msg)
 
         self.data[constants.REPLIES_KEY] = all_replies
-
-    def to_dict(self) -> Dict[str, Any]:
-        return self.data
 
 class SlackUser:
     def __init__(self, data: Dict[str, Any]):
