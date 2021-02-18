@@ -3,7 +3,7 @@ import logging
 import sys
 import time
 
-import src.utils
+import exporter.utils
 
 from slack_sdk.errors import SlackApiError
 from slack_sdk.web.async_slack_response import AsyncSlackResponse
