@@ -4,8 +4,8 @@ from typing import Dict, Any
 
 from slack_sdk.web.async_client import AsyncWebClient
 
-from downloader import FileDownloader
-from fragment import FragmentFactory
+from .downloader import FileDownloader
+from .fragment import FragmentFactory
 
 class JsonSerializable:
     def to_json(self) -> str:

@@ -3,9 +3,7 @@ import logging
 import os
 from typing import Any, Dict, List, Tuple, Union, Callable
 
-import constants
-import context
-import utils
+from . import constants, context, utils
 
 log = logging.getLogger("models")
 
