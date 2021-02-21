@@ -17,6 +17,8 @@ log = logging.getLogger("exporter")
 async def export_emojis(ctx: ExporterContext):
     emojis = await utils.with_retry(ctx.slack_client.emoji_list)
 
+    print("Exporting emojis")
+
     try:
         for emoji, url in emojis["emoji"].items():
             if not url.startswith("https://"):
@@ -34,6 +36,8 @@ async def export_emojis(ctx: ExporterContext):
 
 async def export_team(ctx: ExporterContext):
     team_data = await utils.with_retry(ctx.slack_client.team_info)
+
+    print("Exporting team info")
 
     try:
         for icon_name, icon_url in team_data["team"]["icon"].items():
@@ -55,6 +59,8 @@ async def export_reminders(ctx: ExporterContext):
     try:
         reminders = await utils.with_retry(ctx.slack_client.reminders_list)
 
+        print("Exporting reminders")
+
         ctx.downloader.write_json(constants.REMINDERS_JSON_FILE, reminders["reminders"])
     except SlackApiError as e:
         log.error("Got an API error while trying to export reminders", exc_info=e)
@@ -63,12 +69,15 @@ async def export_users(ctx: ExporterContext):
     users_generator = await utils.with_retry(ctx.slack_client.users_list)
     all_users = []
 
+    counter = Counter("Exporting users ")
+
     try:
         async for users in users_generator:
             all_users.extend(users["members"])
             for user in users["members"]:
                 user_obj = models.SlackUser(user)
                 all_users.append(user)
+                counter.next()
 
                 for url, filename in user_obj.get_exportable_data():
                     full_filename = os.path.join(constants.USERS_EXPORT_DIR, filename)
@@ -79,6 +88,7 @@ async def export_users(ctx: ExporterContext):
         log.error("Got an API error while trying to export user info", exc_info=e)
 
     ctx.downloader.write_json(os.path.join(constants.USERS_EXPORT_DIR, constants.USERS_JSON_FILE), all_users)
+    counter.finish()
 
 def export_file(ctx: ExporterContext, slack_file: models.SlackFile):
     for url, filename in slack_file.get_exportable_data():
@@ -119,6 +129,8 @@ async def export_conversations(ctx: ExporterContext):
     )
     all_conversations = []
 
+    print("Exporting conversation list")
+
     try:
         await convo_generator.run()
 
@@ -138,6 +150,8 @@ async def export_conversations(ctx: ExporterContext):
 async def export_pins(ctx: ExporterContext, convo: models.SlackConversation):
     try:
         pins = await utils.with_retry(ctx.slack_client.pins_list, channel=convo.id)
+
+        print(f"Exporting conversation pins ({convo.name})")
 
         filename = os.path.join(constants.CONVERSATIONS_EXPORT_DIR, convo.id, constants.PINS_JSON_FILE)
         ctx.downloader.write_json(filename, pins["items"])
@@ -165,7 +179,7 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
 
     history_fragment = ctx.fragments.create(history_folder)
 
-    counter = Counter(f"Exporting conversation history ({convo.id}) ")
+    counter = Counter(f"Exporting conversation history ({convo.name}) ")
 
     try:
         await history_generator.run()

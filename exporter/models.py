@@ -45,6 +45,21 @@ class SlackConversation:
     def id(self):
         return self.data["id"]
 
+    @property
+    def name(self):
+        is_channel = self.data.get("is_channel", False)
+        is_group = self.data.get("is_group", False)
+        if is_channel or is_group:
+            prefix = "#" if is_channel else "Group: "
+            channel_name = self.data.get("name", "<NO_NAME>")
+            return f"{prefix}{channel_name}"
+
+        if self.data.get("is_im", False):
+            user = self.data.get("user", "<NO_USER>")
+            return f"DM: {user}"
+
+        return self.id
+
     @classmethod
     async def from_id(cls, context: context.ExporterContext, id: str):
         slack_response = await utils.with_retry(context.slack_client.conversations_info, channel=id)
