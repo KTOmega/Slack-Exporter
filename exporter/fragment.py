@@ -1,35 +1,9 @@
+import collections
 import ujson as json
 import math
 import os
-import time
 import threading
-
-def read_json_from_file(filename):
-    with open(filename) as fd:
-        return json.load(fd)
-
-def convert_to_fragments(data_file, destination_folder, file_format='{}.json', fragment_size=5000):
-    if not os.path.isfile(data_file):
-        raise RuntimeError()
-
-    destination_folder = os.path.abspath(destination_folder)
-    fragment_file_format = destination_folder + '/' + file_format
-
-    if not os.path.isdir(destination_folder):
-        os.mkdir(destination_folder)
-
-    data = read_json_from_file(data_file)
-
-    for i in range(math.ceil(len(data) / fragment_size)):
-        fragment_start = i * fragment_size
-        fragment_end = fragment_start + fragment_size
-
-        fragment = data[fragment_start:fragment_end]
-
-        fragment_filename = fragment_file_format.format(i)
-
-        with open(fragment_filename, "w") as fd:
-            json.dump(fragment, fd)
+import time
 
 class Fragment:
     def __init__(self, index, data):
@@ -89,7 +63,7 @@ class FragmentFactory:
         return frag
 
 class FragmentedJsonList:
-    def __init__(self, data_dir, fragment_file_format='{}.json', fragment_size=5000):
+    def __init__(self, data_dir, fragment_file_format="{}.json", fragment_size=5000):
         self.fragment_size = fragment_size
         self.data_dir = os.path.abspath(data_dir)
         self.fragment_file_format = fragment_file_format
@@ -109,9 +83,12 @@ class FragmentedJsonList:
 
     def close(self):
         self.commit_fragments()
+        self.file_map.clear()
+        self.fragment_map.clear()
+        self.dirty_fragments.clear()
 
     def load_file_map(self):
-        dir_format = self.data_dir + '/' + self.fragment_file_format
+        dir_format = os.path.join(self.data_dir, self.fragment_file_format)
 
         self.fragment_count = 0
         while True:
@@ -141,9 +118,10 @@ class FragmentedJsonList:
             return
 
         fragment_file = self.file_map[fragment]
-        fragment_data = read_json_from_file(fragment_file)
 
-        self.fragment_map[fragment] = Fragment(fragment, fragment_data)
+        with open(fragment_file, "r") as fd:
+            fragment_data = json.load(fd)
+            self.fragment_map[fragment] = Fragment(fragment, fragment_data)
 
     def commit_fragments(self):
         for fragment in self.dirty_fragments:
@@ -152,6 +130,8 @@ class FragmentedJsonList:
 
             with open(fragment_file, "w") as fd:
                 json.dump(fragment_data.data, fd)
+
+        self.dirty_fragments.clear()
 
     def create_new_fragment(self):
         fragment_index = self.fragment_count
