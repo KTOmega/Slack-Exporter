@@ -19,4 +19,6 @@ HISTORY_JSON_DIR = "history"
 
 REPLIES_KEY = "$replies"
 
+CONTEXT_JSON_FILE = "metadata.json"
+
 ITEM_COUNT_LIMIT = 1000

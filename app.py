@@ -16,7 +16,7 @@ import settings
 root = logging.getLogger()
 root.setLevel(logging.INFO)
 
-handler = logging.StreamHandler(sys.stdout)
+handler = logging.StreamHandler(sys.stderr)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(name)s] %(message)s')
 handler.setFormatter(formatter)
@@ -37,8 +37,11 @@ async def run_exporter():
     fragment_factory = FragmentFactory()
 
     # Initialize context
+    last_export_time = ExporterContext.get_last_export_time(settings.file_output_directory)
+
     ctx = ExporterContext(
         export_time=int(time.time()),
+        last_export_time=last_export_time,
         output_directory=settings.file_output_directory,
         slack_client=slack_client,
         downloader=downloader,
