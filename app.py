@@ -24,11 +24,11 @@ root.addHandler(handler)
 
 log = logging.getLogger()
 
-async def main():
+async def run_exporter():
     # Patch Slack API functions
     patch.patch()
 
-    # DEPENDENCY INJECTION: Construct all needed instances of objects
+    # Construct all needed instances of objects
     downloader = FileDownloader(settings.file_output_directory,
         settings.slack_token)
 
@@ -53,6 +53,13 @@ async def main():
 
     # Clean up
     await ctx.close()
+
+async def authenticate():
+    pass
+
+async def main():
+    await authenticate()
+    await run_exporter()
 
 if __name__ == "__main__":
     asyncio.run(main())
