@@ -220,7 +220,6 @@ class FragmentedJsonList:
         return last_fragment_index * self.fragment_size + len(self.fragment_map[last_fragment_index])
 
     def __getitem__(self, index):
-        print(f"__getitem__({index})")
         if isinstance(index, slice):
             return [self[i] for i in range(0, len(self))[index]]
 
