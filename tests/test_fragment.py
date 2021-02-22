@@ -122,6 +122,7 @@ def test_write_extend_large(monkeypatch, mocker):
     new_fragment_spy = mocker.spy(FragmentedJsonList, "create_new_fragment")
 
     fragment = FragmentedJsonList(data_dir, fragment_size=fragment_size)
+
     fragments_to_create = 20
     extension = list(range(fragment_size * fragments_to_create))
 
@@ -144,3 +145,21 @@ def test_write_update(monkeypatch):
         assert "something" in fragment[i] and fragment[i]["something"] == i
 
     assert len(fragment.dirty_fragments) == 1 and 0 in fragment.dirty_fragments
+
+def test_write_commit(monkeypatch, mocker):
+    patch(monkeypatch)
+    write_json_spy = mocker.spy(FragmentedJsonList, "_write_json")
+
+    fragment = FragmentedJsonList(data_dir, fragment_size=fragment_size)
+
+    fragments_to_create = 20
+    extension = list(range(fragment_size * fragments_to_create + 1))
+
+    fragment.extend(extension)
+
+    assert len(fragment.dirty_fragments) in [20, 21]
+
+    fragment.commit_fragments()
+
+    assert len(fragment.dirty_fragments) == 0
+    assert write_json_spy.call_count in [20, 21]
