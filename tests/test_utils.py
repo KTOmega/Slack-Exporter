@@ -1,12 +1,14 @@
+from slack_sdk.errors import SlackApiError
+from slack_sdk.web.async_slack_response import AsyncSlackResponse
+
+import exporter.utils
+
 import asyncio
 import logging
 import sys
 import time
 
-import exporter.utils
-
-from slack_sdk.errors import SlackApiError
-from slack_sdk.web.async_slack_response import AsyncSlackResponse
+retry_time = 0
 
 async def with_retry_coro():
     data = {
@@ -21,7 +23,7 @@ async def with_retry_coro():
         req_args=None,
         data=data,
         headers={
-            "Retry-After": 1
+            "Retry-After": retry_time
         },
         status_code=429
     )
@@ -32,7 +34,7 @@ async def with_retry_with_rate_limit(times=1, retries=1):
     tasks = []
 
     for i in range(times):
-        task = src.utils.with_retry(with_retry_coro, retries=retries)
+        task = exporter.utils.with_retry(with_retry_coro, retries=retries)
 
         tasks.append(asyncio.create_task(task))
 
@@ -41,7 +43,7 @@ async def with_retry_with_rate_limit(times=1, retries=1):
 def rate_limit_test(times=1):
     retries = 2
     awaitable = with_retry_with_rate_limit(times, retries=retries)
-    expected_time = sum([1 + x for x in range(retries)])
+    expected_time = sum([retry_time + x for x in range(retries)])
     print(expected_time)
 
     time_start = time.time()
@@ -57,10 +59,7 @@ def rate_limit_test(times=1):
         assert isinstance(exc, RuntimeError)
 
     assert len(done) == times
-    assert abs(time_end - time_start - expected_time) <= 1
+    assert abs(time_end - time_start - expected_time) <= 0.1
 
 def test_with_retry_rate_limit_once():
     rate_limit_test(1)
-
-def test_with_retry_rate_limit_a_lot():
-    rate_limit_test(5)
