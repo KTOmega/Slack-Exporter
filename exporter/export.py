@@ -6,6 +6,7 @@ from progress.counter import Counter
 import json
 import logging
 import os
+import tempfile
 from typing import Dict, Any
 
 from . import constants, models, utils
@@ -97,7 +98,7 @@ def export_file(ctx: ExporterContext, slack_file: models.SlackFile):
 
 async def export_files(ctx: ExporterContext):
     files_generator = utils.AsyncIteratorWithRetry(
-        ctx.slack_client.files_list, count=constants.ITEM_COUNT_LIMIT, ts_to=ctx.export_time, ts_from=ctx.last_export_time
+        ctx.slack_client.files_list, count=constants.ITEM_COUNT_LIMIT, ts_to=ctx.export_time #, ts_from=ctx.last_export_time
     )
     all_files = []
 
@@ -179,6 +180,9 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
 
     history_fragment = ctx.fragments.create(history_folder)
 
+    temporary_dir = tempfile.TemporaryDirectory()
+    temp_fragment = ctx.fragments.create(temporary_dir.name)
+
     counter = Counter(f"Exporting conversation history ({convo.name}) ")
 
     try:
@@ -203,7 +207,7 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
                 except SlackApiError as e:
                     log.error(f"Error while obtaining reply metadata for message {msg_obj.ts} in channel {convo.id}", exc_info=e)
 
-                history_fragment.append(msg_obj.data)
+                temp_fragment.append(msg_obj.data)
                 counter.next()
 
             try:
@@ -211,9 +215,17 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
             except httpx.HTTPStatusError as e:
                 log.error(f"Caught HTTP status code {e.response.status_code}", exc_info=e)
 
-            history_fragment.commit_fragments()
-    except SlackApiError as e: # TODO: maybe catch a wider net here to save context?
+            temp_fragment.commit_fragments()
+    except SlackApiError as e:
         log.error(f"Got an API error while trying to obtain conversation history", exc_info=e)
+    except Exception as e:
+        log.error(f"Uncaught {e.__class__.__name__}; you may need to do a full resync", exc_info=e)
+
+    history_fragment.extend(temp_fragment[::-1]) # Slack messages are stored in descending order
+
+    temp_fragment.close()
+    history_fragment.close()
+    temporary_dir.cleanup()
 
     counter.finish()
 
