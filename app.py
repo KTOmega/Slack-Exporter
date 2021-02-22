@@ -59,9 +59,10 @@ async def run_exporter():
     await ctx.close()
 
 async def authenticate():
-    import auth.server
+    if settings.slack_token is None:
+        import auth.server
 
-    auth.server.run()
+        auth.server.run()
 
 async def main():
     await authenticate()
