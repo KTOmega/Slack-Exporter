@@ -33,9 +33,9 @@ slack_client_id = os.getenv("SLACK_CLIENT_ID")
 slack_client_secret = os.getenv("SLACK_CLIENT_SECRET")
 slack_signing_secret = os.getenv("SLACK_SIGNING_SECRET")
 slack_oauth_scopes = process_scopes(os.getenv("SLACK_SCOPES"))
-slack_state_dir = os.getenv("SLACK_STATE_DIR", "./data")
+slack_state_dir = os.getenv("SLACK_STATE_DIR", "./state")
 
-file_output_directory = os.getenv("FILE_OUTPUT_DIRECTORY", "")
+file_output_directory = os.getenv("FILE_OUTPUT_DIRECTORY", "./data")
 
 auth_redir_url = os.getenv("AUTH_REDIR_URL", "http://localhost:5000/slack/oauth/callback")
 auth_http_bind = os.getenv("AUTH_HTTP_BIND", "127.0.0.1")
