@@ -8,6 +8,7 @@ from exporter.fragment import FragmentFactory
 
 import asyncio
 import logging
+from multiprocessing import Process
 import sys
 import time
 
@@ -58,10 +59,13 @@ async def run_exporter():
     await ctx.close()
 
 async def authenticate():
-    pass
+    import auth.server
+
+    auth.server.run()
 
 async def main():
     await authenticate()
+    print(settings.slack_token)
     await run_exporter()
 
 if __name__ == "__main__":
