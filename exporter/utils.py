@@ -4,7 +4,7 @@ from slack_sdk.errors import SlackApiError
 import asyncio
 import logging
 import time
-from typing import Coroutine
+from typing import Coroutine, List
 
 log = logging.getLogger("utils")
 
@@ -45,3 +45,9 @@ async def with_retry(coro: Coroutine, retries=5, *args, **kwargs):
                 raise e
     else:
         raise RuntimeError("Rate limited by Slack")
+
+class AggregateError(Exception):
+    def __init__(self, message: str, errors: List[Exception]):
+        self.errors = errors
+
+        super(AggregateError, self).__init__(message)

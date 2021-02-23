@@ -27,7 +27,7 @@ async def export_emojis(ctx: ExporterContext):
 
             emoji_filename = os.path.basename(url)
             emoji_fullname = os.path.join(constants.EMOJI_EXPORT_DIR, emoji_filename)
-            ctx.downloader.enqueue_download(emoji_fullname, url, use_auth=True)
+            ctx.downloader.enqueue_download(url, emoji_fullname, use_auth=True)
 
         await ctx.downloader.flush_download_queue() # probably catch something here
     except SlackApiError as e:
@@ -48,7 +48,7 @@ async def export_team(ctx: ExporterContext):
             icon_filename = os.path.basename(icon_url)
             icon_fullname = os.path.join(constants.TEAM_EXPORT_DIR, icon_filename)
 
-            ctx.downloader.enqueue_download(icon_fullname, icon_url)
+            ctx.downloader.enqueue_download(icon_url, icon_fullname)
 
         await ctx.downloader.flush_download_queue() # probably catch something here
     except SlackApiError as e:
@@ -82,9 +82,9 @@ async def export_users(ctx: ExporterContext):
 
                 for url, filename in user_obj.get_exportable_data():
                     full_filename = os.path.join(constants.USERS_EXPORT_DIR, filename)
-                    ctx.downloader.enqueue_download(full_filename, url)
+                    ctx.downloader.enqueue_download(url, full_filename)
 
-            await ctx.downloader.flush_download_queue()
+        await ctx.downloader.flush_download_queue()
     except SlackApiError as e:
         log.error("Got an API error while trying to export user info", exc_info=e)
 
@@ -94,7 +94,7 @@ async def export_users(ctx: ExporterContext):
 def export_file(ctx: ExporterContext, slack_file: models.SlackFile):
     for url, filename in slack_file.get_exportable_data():
         full_filename = os.path.join(constants.FILES_EXPORT_DIR, filename)
-        ctx.downloader.enqueue_download(full_filename, url, use_auth=True)
+        ctx.downloader.enqueue_download(url, full_filename, use_auth=True)
 
 async def export_files(ctx: ExporterContext):
     files_generator = utils.AsyncIteratorWithRetry(
@@ -116,8 +116,11 @@ async def export_files(ctx: ExporterContext):
 
             try:
                 await ctx.downloader.flush_download_queue()
-            except httpx.HTTPStatusError as e:
-                log.error(f"Caught HTTP status code {e.response.status_code}", exc_info=e)
+            except utils.AggregateError as e:
+                log.warning(f"Caught {len(e.errors)} errors while downloading files.")
+
+                for err in e.errors:
+                    log.warning(str(err))
     except SlackApiError as e:
         log.error(f"Got an API error while trying to obtain file info", exc_info=e)
 
