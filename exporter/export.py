@@ -1,13 +1,12 @@
-from slack_sdk.errors import SlackApiError
-
-import httpx
-from progress.counter import Counter
-
 import json
 import logging
 import os
 import tempfile
-from typing import Dict, Any
+from typing import Any, Dict
+
+import httpx
+from progress.counter import Counter
+from slack_sdk.errors import SlackApiError
 
 from . import constants, models, utils
 from .context import ExporterContext
@@ -129,7 +128,7 @@ async def export_files(ctx: ExporterContext):
 
 async def export_conversations(ctx: ExporterContext):
     convo_generator = utils.AsyncIteratorWithRetry(
-        ctx.slack_client.conversations_list, limit=constants.ITEM_COUNT_LIMIT, types="public_channel,private_channel,mpim,im"
+        ctx.slack_client.conversations_list, limit=constants.ITEM_COUNT_LIMIT, types=constants.CONVERSATIONS_TYPES
     )
     all_conversations = []
 
@@ -233,7 +232,7 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
     counter.finish()
 
 def export_metadata(ctx):
-    ctx.downloader.write_json("metadata.json", ctx.to_metadata().to_dict())
+    ctx.downloader.write_json(constants.CONTEXT_JSON_FILE, ctx.to_metadata().to_dict())
 
 async def export_all(ctx: ExporterContext):
     await export_emojis(ctx)

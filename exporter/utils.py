@@ -1,10 +1,10 @@
-from slack_sdk.web.async_client import AsyncSlackResponse
-from slack_sdk.errors import SlackApiError
-
 import asyncio
 import logging
 import time
 from typing import Coroutine, List
+
+from slack_sdk.web.async_client import AsyncSlackResponse
+from slack_sdk.errors import SlackApiError
 
 log = logging.getLogger("utils")
 

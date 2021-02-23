@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import Any, Dict, List, Tuple, Union, Callable
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 from . import constants, context, utils
 

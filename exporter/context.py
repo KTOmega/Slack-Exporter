@@ -1,9 +1,9 @@
-from slack_sdk.web.async_client import AsyncWebClient
-
 from dataclasses import dataclass
 import json
 import os
 from typing import Dict, Any
+
+from slack_sdk.web.async_client import AsyncWebClient
 
 from . import constants
 from .downloader import FileDownloader

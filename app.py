@@ -1,29 +1,26 @@
-from slack_sdk.web.async_client import AsyncWebClient, AsyncSlackResponse
-
-import exporter
-from exporter import patch
-from exporter.context import ExporterContext
-from exporter.downloader import FileDownloader
-from exporter.fragment import FragmentFactory
-
 import asyncio
 import logging
 from multiprocessing import Process
 import sys
 import time
 
+from slack_sdk.web.async_client import AsyncSlackResponse, AsyncWebClient
+
+import exporter
+from exporter import patch
+from exporter.context import ExporterContext
+from exporter.downloader import FileDownloader
+from exporter.fragment import FragmentFactory
 import settings
 
-root = logging.getLogger()
-root.setLevel(logging.INFO)
+log = logging.getLogger()
+log.setLevel(logging.INFO)
 
 handler = logging.StreamHandler(sys.stderr)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(name)s] %(message)s')
 handler.setFormatter(formatter)
 root.addHandler(handler)
-
-log = logging.getLogger()
 
 async def run_exporter():
     # Patch Slack API functions

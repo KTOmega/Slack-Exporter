@@ -1,8 +1,9 @@
-import slack_sdk.web
-
 import logging
 from typing import Union
 
+import slack_sdk.web
+
+# TODO: maybe upstream this
 async def _AsyncSlackResponse___anext__(self):
     """Retrieves the next portion of results, if 'next_cursor' is present.
 
