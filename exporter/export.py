@@ -4,7 +4,6 @@ import os
 import tempfile
 from typing import Any, Dict
 
-import httpx
 from progress.counter import Counter
 from slack_sdk.errors import SlackApiError
 
@@ -214,8 +213,11 @@ async def export_conversation_history(ctx: ExporterContext, convo: models.SlackC
 
             try:
                 await ctx.downloader.flush_download_queue()
-            except httpx.HTTPStatusError as e:
-                log.error(f"Caught HTTP status code {e.response.status_code}", exc_info=e)
+            except utils.AggregateError as e:
+                log.warning(f"Caught {len(e.errors)} errors while downloading files.")
+
+                for err in e.errors:
+                    log.warning(str(err))
 
             temp_fragment.commit_fragments()
     except SlackApiError as e:
