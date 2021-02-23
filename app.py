@@ -66,7 +66,6 @@ async def authenticate():
 
 async def main():
     await authenticate()
-    print(settings.slack_token)
     await run_exporter()
 
 if __name__ == "__main__":
