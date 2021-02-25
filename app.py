@@ -20,7 +20,7 @@ handler = logging.StreamHandler(sys.stderr)
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('[%(asctime)s][%(levelname)s][%(name)s] %(message)s')
 handler.setFormatter(formatter)
-root.addHandler(handler)
+log.addHandler(handler)
 
 async def run_exporter():
     # Patch Slack API functions
