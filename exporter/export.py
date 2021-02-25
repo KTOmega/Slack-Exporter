@@ -75,7 +75,6 @@ async def export_users(ctx: ExporterContext):
             all_users.extend(users["members"])
             for user in users["members"]:
                 user_obj = models.SlackUser(user)
-                all_users.append(user)
                 counter.next()
 
                 for url, filename in user_obj.get_exportable_data():
